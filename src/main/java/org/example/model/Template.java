@@ -1,30 +1,30 @@
 package org.example.model;
 
-@jakarta.persistence.Entity
-@jakarta.persistence.Table(name = "templates")
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "templates")
 public class Template {
 
-    @jakarta.persistence.Id
-    @jakarta.persistence.GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @jakarta.persistence.Column(name = "template_text")
-    private String templateText;
+    private String expression; // למשל: "X + Y" או "X - Y"
+    private int difficulty;    // רמת קושי: 1 (קל), 2 (בינוני), 3 (קשה)
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
+    // קונסטרקטורים
+    public Template() {}
+
+    public Template(String expression, int difficulty) {
+        this.expression = expression;
+        this.difficulty = difficulty;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTemplateText() {
-        return templateText;
-    }
-
-    public void setTemplateText(String templateText) {
-        this.templateText = templateText;
-    }
+    // גטרים וסטרים
+    public Long getId() { return id; }
+    public String getExpression() { return expression; }
+    public void setExpression(String expression) { this.expression = expression; }
+    public int getDifficulty() { return difficulty; }
+    public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
 }
