@@ -50,10 +50,14 @@ public class QuestionService {
         int num1 = random.nextInt((max - min) + 1) + min;
         int num2 = random.nextInt((max - min) + 1) + min;
 
+        // --- סידור המספרים (גדול בצד שמאל, וחילוק ללא שארית) ---
         if (questionText.contains("-") && num1 < num2) {
             int temp = num1; num1 = num2; num2 = temp;
+        } else if (questionText.contains("/")) {
+            // טריק לחילוק מושלם: מכפילים אותם, וכך הראשון תמיד יתחלק בשני!
+            // למשל: אם הוגרלו 4 ו-3, num1 יהפוך ל-12. ואז 12 / 3 = 4.
+            num1 = num1 * num2;
         }
-
         // --- חישוב התשובה הנכונה בזמן אמת ---
         int correctAnswer = 0;
         if (selectedTemplate.isWordProblem()) {
@@ -64,6 +68,8 @@ public class QuestionService {
             correctAnswer = num1 - num2;
         } else if (questionText.contains("*")) {
             correctAnswer = num1 * num2;
+        }else if (questionText.contains("/")) {
+            correctAnswer = num1 / num2; // תומך עכשיו גם בחילוק!
         }
 
         // השתלת המילים בשאלה

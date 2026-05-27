@@ -75,7 +75,9 @@ function App() {
                         ⏱️ זמן נותר: {timeLeft} שניות
                     </h2>
 
-                    <h3>{questionData.text}</h3>
+                    <h3 style={{ direction: /[א-ת]/.test(questionData.text) ? 'rtl' : 'ltr', display: 'inline-block' }}>
+                        {questionData.text}
+                    </h3>
 
                     {/* אזור הקלט והבדיקה (יוצג רק אם עוד לא נגמר הזמן ועוד לא קיבלנו פידבק) */}
                     {!feedback && timeLeft > 0 ? (
