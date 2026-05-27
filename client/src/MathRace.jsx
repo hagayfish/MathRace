@@ -1,60 +1,109 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import './App.css'; // או כל קובץ עיצוב שיש לכם
 
-const MathRace = () => {
-    const [question, setQuestion] = useState('לחץ על התחלת משחק כדי לקבל שאלה');
-    const [difficulty, setDifficulty] = useState(1); // ברירת מחדל: רמה 1 (קל)
-    const [loading, setLoading] = useState(false);
+function App() {
+    const [difficulty, setDifficulty] = useState(1);
+    const [questionData, setQuestionData] = useState(null); // עכשיו זה אובייקט, לא רק טקסט
+    const [userAnswer, setUserAnswer] = useState('');
+    const [feedback, setFeedback] = useState('');
+    const [timeLeft, setTimeLeft] = useState(0);
 
-    // פונקציה שפונה לשרת ה-Java ומביאה שאלה חדשה
-    const fetchQuestion = async (selectedDifficulty) => {
-        setLoading(true);
+    // 1. פונקציה למשיכת שאלה חדשה מהשרת
+    const fetchQuestion = async () => {
         try {
-            // שים לב: זו בדיוק הכתובת של השרת שפתחנו ב-Java!
-            const response = await axios.get(`http://localhost:8080/api/math/generate?difficulty=${selectedDifficulty}`);
-            setQuestion(response.data);
+            // שים לב: אנחנו מצפים לקבל בחזרה JSON חכם מהשרת
+            const response = await fetch(`http://localhost:8080/get-question?difficulty=${difficulty}`);
+            const data = await response.json();
+
+            setQuestionData(data);
+            setTimeLeft(data.timeLimit); // מעדכן את הטיימר לפי מה שהשרת החליט (למשל 15)
+            setUserAnswer(''); // מאפס את תיבת הטקסט
+            setFeedback('');   // מאפס את ההודעות הקודמות
         } catch (error) {
-            console.error("שגיאה בחיבור לשרת הבקאנד:", error);
-            setQuestion("אופס, לא הצלחנו לתקשר עם השרת. ודא ששרת ה-Java מופעל!");
+            setFeedback("שגיאה: לא הצלחנו להתחבר לשרת.");
+            console.error(error);
         }
-        setLoading(false);
     };
 
-    // שינוי רמה מהדרופדאון יקרא מיד לשאלה חדשה
-    const handleDifficultyChange = (e) => {
-        const newDifficulty = parseInt(e.target.value);
-        setDifficulty(newDifficulty);
-        fetchQuestion(newDifficulty);
+    // 2. מנגנון הטיימר (יורד כל שנייה)
+    useEffect(() => {
+        // אם נשאר זמן ועוד לא ענינו
+        if (timeLeft > 0 && !feedback) {
+            const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+            return () => clearTimeout(timerId); // מנקה את הטיימר הקודם
+        } else if (timeLeft === 0 && questionData && !feedback) {
+            setFeedback("⏳ נגמר הזמן! נסה את השאלה הבאה.");
+        }
+    }, [timeLeft, questionData, feedback]);
+
+    // 3. שליחת התשובה לבדיקה בשרת
+    const submitAnswer = async () => {
+        if (!userAnswer) return; // אם התלמיד לא הקליד כלום, אל תעשה כלום
+
+        try {
+            const response = await fetch(`http://localhost:8080/check-answer?questionId=${questionData.questionId}&answer=${userAnswer}`);
+            const resultText = await response.text(); // השרת שלנו מחזיר כרגע טקסט רגיל (String)
+            setFeedback(resultText);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     return (
-        <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'Arial' }}>
-            <h1>🏎️ מירוץ חשבון - MathRace 🏎️</h1>
+        <div style={{ textAlign: 'center', marginTop: '50px', direction: 'rtl' }}>
+            <h1>🏎️ MathRace - מירוץ חשבון 🏎️</h1>
 
-            <div style={{ margin: '20px' }}>
-                <label style={{ fontSize: '18px', marginLeft: '10px' }}>בחר רמת קושי: </label>
-                <select value={difficulty} onChange={handleDifficultyChange} style={{ padding: '5px', fontSize: '16px' }}>
-                    <option value={1}>רמה 1 (קל - חיבור/חיסור)</option>
-                    <option value={2}>רמה 2 (בינוני - מספרים גדולים וכפל)</option>
-                    <option value={3}>רמה 3 (קשה - תרגילים מתקדמים)</option>
+            <div style={{ marginBottom: '20px' }}>
+                <label>בחר רמת קושי: </label>
+                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                    <option value={1}>רמה 1 (קל)</option>
+                    <option value={2}>רמה 2 (בינוני)</option>
+                    <option value={3}>רמה 3 (קשה)</option>
                 </select>
             </div>
 
-            <div style={{ background: '#f0f0f0', padding: '30px', borderRadius: '10px', display: 'inline-block', minWidth: '300px', margin: '20px' }}>
-                <h2 style={{ fontSize: '32px', color: '#333' }}>
-                    {loading ? "מגריל שאלה..." : question}
-                </h2>
-            </div>
-
-            <br />
-            <button
-                onClick={() => fetchQuestion(difficulty)}
-                style={{ padding: '10px 20px', fontSize: '18px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-            >
-                שאלה הבאה ➡️
+            <button onClick={fetchQuestion} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                {questionData ? "שאלה הבאה ➡️" : "התחל משחק!"}
             </button>
+
+            {/* תצוגת השאלה והמשחק */}
+            {questionData && (
+                <div style={{ marginTop: '30px', padding: '20px', border: '2px solid #ccc', borderRadius: '10px', display: 'inline-block', minWidth: '300px' }}>
+
+                    {/* שעון העצר */}
+                    <h2 style={{ color: timeLeft <= 5 ? 'red' : 'black' }}>
+                        ⏱️ זמן נותר: {timeLeft} שניות
+                    </h2>
+
+                    <h3>{questionData.text}</h3>
+
+                    {/* אזור הקלט והבדיקה (יוצג רק אם עוד לא נגמר הזמן ועוד לא קיבלנו פידבק) */}
+                    {!feedback && timeLeft > 0 ? (
+                        <div style={{ marginTop: '20px' }}>
+                            <input
+                                type="number"
+                                value={userAnswer}
+                                onChange={(e) => setUserAnswer(e.target.value)}
+                                placeholder="הכנס תשובה..."
+                                style={{ padding: '10px', fontSize: '16px', width: '120px', marginRight: '10px' }}
+                            />
+                            <button onClick={submitAnswer} style={{ padding: '10px 20px', backgroundColor: '#2196F3', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                                בדוק אותי!
+                            </button>
+                        </div>
+                    ) : null}
+
+                    {/* הודעת הפידבק לאחר התשובה */}
+                    {feedback && (
+                        <div style={{ marginTop: '20px', fontSize: '20px', fontWeight: 'bold' }}>
+                            {feedback}
+                        </div>
+                    )}
+
+                </div>
+            )}
         </div>
     );
-};
+}
 
-export default MathRace;
+export default App;
