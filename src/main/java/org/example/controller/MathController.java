@@ -30,7 +30,7 @@ public class MathController {
         boolean isCorrect = questionService.checkAnswer(questionId, answer);
 
         if (isCorrect) {
-            return "🏆 תשובה נכונה! (חבר צוות 3 יוסיף פה נקודות בהמשך)";
+            return "🏆 תשובה נכונה! (10 נקודות)";
         } else {
             return "❌ טעות, נסה שוב במרוץ הבא.";
         }
